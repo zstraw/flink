@@ -34,59 +34,62 @@ import org.apache.calcite.tools.RuleSets;
 import org.junit.Before;
 import org.junit.Test;
 
+/** Test for {@link FlinkFilterSnapshotTransposeRule}. */
 public class FilterSnapshotTransposeRuleTest extends TableTestBase {
     private final BatchTableTestUtil util = batchTestUtil(TableConfig.getDefault());
 
     @Before
     public void setup() {
         util.buildBatchProgram(FlinkBatchProgram.DEFAULT_REWRITE());
-        CalciteConfig calciteConfig = TableConfigUtils.getCalciteConfig(
-                util.tableEnv().getConfig());
-        calciteConfig.getBatchProgram().get().addLast(
-                "rules",
-                FlinkHepRuleSetProgramBuilder.<BatchOptimizeContext>newBuilder()
-                        .setHepRulesExecutionType(HEP_RULES_EXECUTION_TYPE.RULE_SEQUENCE())
-                        .setHepMatchOrder(HepMatchOrder.BOTTOM_UP)
-                        .add(RuleSets.ofList(
-                                CoreRules.FILTER_INTO_JOIN,
-                                FlinkFilterSnapshotTransposeRule.INSTANCE,
-                                PushFilterIntoTableSourceScanRule.INSTANCE))
-                        .build()
-        );
+        CalciteConfig calciteConfig =
+                TableConfigUtils.getCalciteConfig(util.tableEnv().getConfig());
+        calciteConfig
+                .getBatchProgram()
+                .get()
+                .addLast(
+                        "rules",
+                        FlinkHepRuleSetProgramBuilder.<BatchOptimizeContext>newBuilder()
+                                .setHepRulesExecutionType(HEP_RULES_EXECUTION_TYPE.RULE_SEQUENCE())
+                                .setHepMatchOrder(HepMatchOrder.BOTTOM_UP)
+                                .add(
+                                        RuleSets.ofList(
+                                                CoreRules.FILTER_INTO_JOIN,
+                                                FlinkFilterSnapshotTransposeRule.INSTANCE,
+                                                PushFilterIntoTableSourceScanRule.INSTANCE))
+                                .build());
         String ddl1 =
-                "CREATE TABLE ScanTable (\n" +
-                        "  `id` BIGINT,\n" +
-                        "  `len` BIGINT,\n" +
-                        "  `content` STRING,\n" +
-                        "  `proctime` AS PROCTIME()" +
-                        ") WITH (\n" +
-                        "  'connector' = 'values',\n" +
-                        "  'bounded' = 'true'\n" +
-                        ")";
+                "CREATE TABLE ScanTable (\n"
+                        + "  `id` BIGINT,\n"
+                        + "  `len` BIGINT,\n"
+                        + "  `content` STRING,\n"
+                        + "  `proctime` AS PROCTIME()"
+                        + ") WITH (\n"
+                        + "  'connector' = 'values',\n"
+                        + "  'bounded' = 'true'\n"
+                        + ")";
         util.tableEnv().executeSql(ddl1);
         String ddl2 =
-                "CREATE TABLE LookupTable (\n" +
-                        "  `age` INT,\n" +
-                        "  `id` BIGINT,\n" +
-                        "  `name` STRING,\n" +
-                        "  `info` STRING,\n" +
-                        "  `price` DOUBLE\n" +
-                        ") WITH (" +
-                        "  'connector' = 'values',\n" +
-                        "  'bounded' = 'true', \n" +
-                        "  'filterable-fields' =  'price;age;info'\n" +
-                        ")";
+                "CREATE TABLE LookupTable (\n"
+                        + "  `age` INT,\n"
+                        + "  `id` BIGINT,\n"
+                        + "  `name` STRING,\n"
+                        + "  `info` STRING,\n"
+                        + "  `price` DOUBLE\n"
+                        + ") WITH ("
+                        + "  'connector' = 'values',\n"
+                        + "  'bounded' = 'true', \n"
+                        + "  'filterable-fields' =  'price;age;info'\n"
+                        + ")";
         util.tableEnv().executeSql(ddl2);
     }
 
     @Test
     public void testCanPushDown() {
         String ddl =
-                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name " +
-                        "FROM ScanTable " +
-                        "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
-                        +
-                        "WHERE LookupTable.age > 10";
+                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name "
+                        + "FROM ScanTable "
+                        + "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
+                        + "WHERE LookupTable.age > 10";
 
         util.verifyRelPlan(ddl);
     }
@@ -94,11 +97,10 @@ public class FilterSnapshotTransposeRuleTest extends TableTestBase {
     @Test
     public void testCannotPushDown() {
         String ddl =
-                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name " +
-                        "FROM ScanTable " +
-                        "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
-                        +
-                        "WHERE LookupTable.name = 'flink'";
+                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name "
+                        + "FROM ScanTable "
+                        + "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
+                        + "WHERE LookupTable.name = 'flink'";
 
         util.verifyRelPlan(ddl);
     }
@@ -106,11 +108,10 @@ public class FilterSnapshotTransposeRuleTest extends TableTestBase {
     @Test
     public void testCannotPushDown2() {
         String ddl =
-                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name " +
-                        "FROM ScanTable " +
-                        "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
-                        +
-                        "WHERE LookupTable.name <> 'beam' AND LookupTable.name <> 'spark'";
+                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name "
+                        + "FROM ScanTable "
+                        + "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
+                        + "WHERE LookupTable.name <> 'beam' AND LookupTable.name <> 'spark'";
 
         util.verifyRelPlan(ddl);
     }
@@ -118,11 +119,10 @@ public class FilterSnapshotTransposeRuleTest extends TableTestBase {
     @Test
     public void testCannotPushDown3() {
         String ddl =
-                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name " +
-                        "FROM ScanTable " +
-                        "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
-                        +
-                        "WHERE LookupTable.name = 'beam' OR LookupTable.name = 'spark'";
+                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name "
+                        + "FROM ScanTable "
+                        + "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
+                        + "WHERE LookupTable.name = 'beam' OR LookupTable.name = 'spark'";
 
         util.verifyRelPlan(ddl);
     }
@@ -131,11 +131,9 @@ public class FilterSnapshotTransposeRuleTest extends TableTestBase {
     public void testWithUdf() {
         String ddl =
                 "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name, LookupTable.info "
-                        +
-                        "FROM ScanTable " +
-                        "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
-                        +
-                        "WHERE UPPER(LookupTable.info) = 'test'";
+                        + "FROM ScanTable "
+                        + "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
+                        + "WHERE UPPER(LookupTable.info) = 'test'";
 
         util.verifyRelPlan(ddl);
     }
@@ -143,11 +141,10 @@ public class FilterSnapshotTransposeRuleTest extends TableTestBase {
     @Test
     public void testPartialPushDown() {
         String ddl =
-                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name " +
-                        "FROM ScanTable " +
-                        "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
-                        +
-                        "WHERE LookupTable.name = 'flink' AND LookupTable.age > 10";
+                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name "
+                        + "FROM ScanTable "
+                        + "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
+                        + "WHERE LookupTable.name = 'flink' AND LookupTable.age > 10";
 
         util.verifyRelPlan(ddl);
     }
@@ -155,11 +152,10 @@ public class FilterSnapshotTransposeRuleTest extends TableTestBase {
     @Test
     public void testCanNotPartialPushDown() {
         String ddl =
-                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name " +
-                        "FROM ScanTable " +
-                        "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
-                        +
-                        "WHERE LookupTable.name = 'flink' OR LookupTable.age > 10";
+                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name "
+                        + "FROM ScanTable "
+                        + "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
+                        + "WHERE LookupTable.name = 'flink' OR LookupTable.age > 10";
 
         util.verifyRelPlan(ddl);
     }
@@ -167,11 +163,10 @@ public class FilterSnapshotTransposeRuleTest extends TableTestBase {
     @Test
     public void testFullyPushDown() {
         String ddl =
-                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name " +
-                        "FROM ScanTable " +
-                        "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
-                        +
-                        "WHERE LookupTable.age < 100 AND LookupTable.age > 10";
+                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name "
+                        + "FROM ScanTable "
+                        + "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
+                        + "WHERE LookupTable.age < 100 AND LookupTable.age > 10";
 
         util.verifyRelPlan(ddl);
     }
@@ -179,11 +174,10 @@ public class FilterSnapshotTransposeRuleTest extends TableTestBase {
     @Test
     public void testUnconvertedExpression() {
         String ddl =
-                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name " +
-                        "FROM ScanTable " +
-                        "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
-                        +
-                        "WHERE LookupTable.age < 100 AND LookupTable.age > 10 AND CAST(LookupTable.price AS BIGINT) < 1000";
+                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name "
+                        + "FROM ScanTable "
+                        + "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
+                        + "WHERE LookupTable.age < 100 AND LookupTable.age > 10 AND CAST(LookupTable.price AS BIGINT) < 1000";
 
         util.verifyRelPlan(ddl);
     }
@@ -191,11 +185,10 @@ public class FilterSnapshotTransposeRuleTest extends TableTestBase {
     @Test
     public void testComplicatedPartialPushDown() {
         String ddl =
-                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name " +
-                        "FROM ScanTable " +
-                        "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
-                        +
-                        "WHERE LookupTable.name = 'flink' AND LookupTable.age > 10 AND ScanTable.content <> 'flink'";
+                "SELECT ScanTable.id, ScanTable.len, LookupTable.age, LookupTable.name "
+                        + "FROM ScanTable "
+                        + "JOIN LookupTable FOR system_time AS OF ScanTable.proctime ON ScanTable.id = LookupTable.id "
+                        + "WHERE LookupTable.name = 'flink' AND LookupTable.age > 10 AND ScanTable.content <> 'flink'";
 
         util.verifyRelPlan(ddl);
     }
