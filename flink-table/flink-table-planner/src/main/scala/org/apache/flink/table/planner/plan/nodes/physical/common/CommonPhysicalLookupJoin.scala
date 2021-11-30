@@ -120,7 +120,10 @@ abstract class CommonPhysicalLookupJoin(
   }
 
   lazy val tableDigest: Array[String] = temporalTable match {
-    case t: TableSourceTable => t.extraDigests
+    case t: TableSourceTable =>
+      val qualifiedName = t.getQualifiedName
+      // qualifiedName has table identifier which occupied three array space
+      qualifiedName.subList(3, qualifiedName.size()).asScala.toArray
     case _: LegacyTableSourceTable[_] => Array.empty
   }
 

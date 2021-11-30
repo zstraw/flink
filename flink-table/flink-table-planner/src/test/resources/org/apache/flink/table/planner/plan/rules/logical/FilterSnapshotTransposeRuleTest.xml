@@ -151,7 +151,7 @@ LogicalProject(id=[$0], len=[$1], age=[$4], name=[$6])
    :- LogicalProject(id=[$0], len=[$1], content=[$2], proctime=[PROCTIME()])
    :  +- LogicalTableScan(table=[[default_catalog, default_database, ScanTable]])
    +- LogicalSnapshot(period=[$cor0.proctime])
-      +- LogicalTableScan(table=[[default_catalog, default_database, LookupTable, filter=[greaterThan(age, 10)]]])
+      +- LogicalTableScan(table=[[default_catalog, default_database, LookupTable, filter=[>(age, 10)]]])
 ]]>
     </Resource>
   </TestCase>
@@ -180,7 +180,7 @@ LogicalProject(id=[$0], len=[$1], age=[$4], name=[$6])
    :     +- LogicalTableScan(table=[[default_catalog, default_database, ScanTable]])
    +- LogicalSnapshot(period=[$cor0.proctime])
       +- LogicalFilter(condition=[=($2, _UTF-16LE'flink')])
-         +- LogicalTableScan(table=[[default_catalog, default_database, LookupTable, filter=[greaterThan(age, 10)]]])
+         +- LogicalTableScan(table=[[default_catalog, default_database, LookupTable, filter=[>(age, 10)]]])
 ]]>
     </Resource>
   </TestCase>
@@ -207,7 +207,7 @@ LogicalProject(id=[$0], len=[$1], age=[$4], name=[$6])
    :- LogicalProject(id=[$0], len=[$1], content=[$2], proctime=[PROCTIME()])
    :  +- LogicalTableScan(table=[[default_catalog, default_database, ScanTable]])
    +- LogicalSnapshot(period=[$cor0.proctime])
-      +- LogicalTableScan(table=[[default_catalog, default_database, LookupTable, filter=[and(greaterThan(age, 10), lessThan(age, 100))]]])
+      +- LogicalTableScan(table=[[default_catalog, default_database, LookupTable, filter=[and(>(age, 10), <(age, 100))]]])
 ]]>
     </Resource>
   </TestCase>
@@ -263,7 +263,7 @@ LogicalProject(id=[$0], len=[$1], age=[$4], name=[$6])
    :  +- LogicalTableScan(table=[[default_catalog, default_database, ScanTable]])
    +- LogicalSnapshot(period=[$cor0.proctime])
       +- LogicalFilter(condition=[=($2, _UTF-16LE'flink')])
-         +- LogicalTableScan(table=[[default_catalog, default_database, LookupTable, filter=[greaterThan(age, 10)]]])
+         +- LogicalTableScan(table=[[default_catalog, default_database, LookupTable, filter=[>(age, 10)]]])
 ]]>
     </Resource>
   </TestCase>
@@ -290,7 +290,7 @@ LogicalProject(id=[$0], len=[$1], age=[$4], name=[$6], info=[$7])
    :- LogicalProject(id=[$0], len=[$1], content=[$2], proctime=[PROCTIME()])
    :  +- LogicalTableScan(table=[[default_catalog, default_database, ScanTable]])
    +- LogicalSnapshot(period=[$cor0.proctime])
-      +- LogicalTableScan(table=[[default_catalog, default_database, LookupTable, filter=[equals(upper(info), 'test')]]])
+      +- LogicalTableScan(table=[[default_catalog, default_database, LookupTable, filter=[=(UPPER(info), _UTF-16LE'test':VARCHAR(2147483647) CHARACTER SET "UTF-16LE")]]])
 ]]>
     </Resource>
   </TestCase>

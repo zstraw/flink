@@ -372,7 +372,7 @@ class LookupJoinTest(legacyTableSource: Boolean) extends TableTestBase {
         |WHERE D.info = 'flink' AND D.age > 10
         |""".stripMargin
 
-    testUtil.verifyPlan(sql)
+    testUtil.verifyExecPlan(sql)
   }
 
   @Test
@@ -385,7 +385,7 @@ class LookupJoinTest(legacyTableSource: Boolean) extends TableTestBase {
         |WHERE UPPER(D.info) = 'flink'
         |""".stripMargin
 
-    testUtil.verifyPlan(sql)
+    testUtil.verifyExecPlan(sql)
   }
 
   // ==========================================================================================
