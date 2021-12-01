@@ -357,7 +357,7 @@ class FlinkRelMdModifiedMonotonicityTest extends FlinkRelMdHandlerTestBase {
     assertEquals(
       new RelModifiedMonotonicity(Array(
         CONSTANT,CONSTANT,CONSTANT,CONSTANT,CONSTANT,
-        CONSTANT,CONSTANT,CONSTANT,CONSTANT,CONSTANT)),
+        CONSTANT,CONSTANT,CONSTANT,CONSTANT,CONSTANT,CONSTANT)),
       mq.getRelModifiedMonotonicity(streamLookupJoin))
   }
 }
